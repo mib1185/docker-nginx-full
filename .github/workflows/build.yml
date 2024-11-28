@@ -6,13 +6,19 @@ on:
   push:
     branches: ["master"]
 
+env:
+  BASE_IMAGE: ${{ github.repository_owner }}/nginx-full
+
 jobs:
   build_base_image:
     runs-on: ubuntu-latest
-    name: Build ${{ matrix.arch }} base image
+    name: Build ${{ matrix.platform }} base image
     strategy:
       matrix:
-        arch: ["aarch64", "amd64"]
+        platform:
+            - linux/amd64
+            - linux/arm64
+            - linux/arm/v7
 
     steps:
       - name: Check out repository
@@ -21,9 +27,14 @@ jobs:
       - name: Set build arguments
         run: |
           cat versions >> $GITHUB_ENV
-          if [[ -z "${{ github.head_ref }}" ]] && [[ "${{ github.event_name }}" == "push" ]]; then
-              echo "BUILD_ARGS=--docker-hub-check" >> $GITHUB_ENV;
-          fi
+          platform=${{ matrix.platform }}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV   
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.BASE_IMAGE }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -32,21 +43,73 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Login to DockerHub
-        if: env.BUILD_ARGS == '--docker-hub-check'
         uses: docker/login-action@v3.3.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v6
         with:
           push: false
-          tags: ${{ github.repository_owner }}/nginx-full:latest
-          platforms: linux/${{ matrix.arch }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/${{ matrix.platform }}
           file: docker/Dockerfile
+          outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
           build-args: |
             OPENRESTY_VERSION=${{ env.OPENRESTY_VERSION }}
             CROWDSEC_OPENRESTY_BOUNCER_VERSION=${{ env.CROWDSEC_OPENRESTY_BOUNCER_VERSION }}
             LUA_VERSION=${{ env.LUA_VERSION }}
             LUAROCKS_VERSION=${{ env.LUAROCKS_VERSION }}
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"          
+      
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ env.PLATFORM_PAIR }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    runs-on: ubuntu-latest
+    needs:
+      - build_base_image
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.BASE_IMAGE }}
+      
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Create manifest list and push
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.BASE_IMAGE }}@sha256:%s ' *)          
+      
+      - name: Inspect image
+        run: |
+          docker buildx imagetools inspect ${{ env.BASE_IMAGE }}:${{ steps.meta.outputs.version }}
