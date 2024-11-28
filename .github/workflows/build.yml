@@ -45,6 +45,7 @@ jobs:
         with:
           push: false
           tags: ${{ github.repository_owner }}/nginx-full:latest
+          file: docker/Dockerfile
           build-args: |
             OPENRESTY_VERSION=${{ env.OPENRESTY_VERSION }},\
             CROWDSEC_OPENRESTY_BOUNCER_VERSION="${{ env.CROWDSEC_OPENRESTY_BOUNCER_VERSION }},\
