@@ -48,7 +48,7 @@ jobs:
           file: docker/Dockerfile
           build-args: |
             OPENRESTY_VERSION=${{ env.OPENRESTY_VERSION }},\
-            CROWDSEC_OPENRESTY_BOUNCER_VERSION="${{ env.CROWDSEC_OPENRESTY_BOUNCER_VERSION }},\
+            CROWDSEC_OPENRESTY_BOUNCER_VERSION=${{ env.CROWDSEC_OPENRESTY_BOUNCER_VERSION }},\
             LUA_VERSION=${{ env.LUA_VERSION }},\
             LUAROCKS_VERSION=${{ env.LUAROCKS_VERSION }}
 
