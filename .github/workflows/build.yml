@@ -26,9 +26,9 @@ jobs:
 
       - name: Set build arguments
         run: |
-          cat versions >> $GITHUB_ENV
           platform=linux/${{ matrix.platform }}
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV   
+          cat versions >> $GITHUB_ENV
 
       - name: Docker meta
         id: meta
