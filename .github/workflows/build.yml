@@ -52,7 +52,7 @@ jobs:
         id: build
         uses: docker/build-push-action@v6
         with:
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: docker.io/${{ github.repository }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/${{ matrix.platform }}
           file: docker/Dockerfile
