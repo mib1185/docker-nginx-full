@@ -7,7 +7,7 @@ on:
     branches: ["master"]
 
 env:
-  BASE_IMAGE: ${{ github.repository_owner }}/nginx-full
+  BASE_IMAGE: ${{ github.repository_owner }}/docker-nginx-full
 
 jobs:
   build_base_image:
