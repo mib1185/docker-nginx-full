@@ -7,7 +7,7 @@ on:
     branches: ["master"]
 
 env:
-  BASE_IMAGE: ${{ github.repository_owner }}/docker-nginx-full
+  BASE_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/docker-nginx-full
 
 jobs:
   build_base_image:
@@ -52,7 +52,7 @@ jobs:
         id: build
         uses: docker/build-push-action@v6
         with:
-          tags: docker.io/${{ github.repository }}
+          tags: docker.io/${{ env.BASE_IMAGE }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/${{ matrix.platform }}
           file: docker/Dockerfile
