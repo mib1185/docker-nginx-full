@@ -62,6 +62,9 @@ jobs:
             CROWDSEC_OPENRESTY_BOUNCER_VERSION=${{ env.CROWDSEC_OPENRESTY_BOUNCER_VERSION }}
             LUA_VERSION=${{ env.LUA_VERSION }}
             LUAROCKS_VERSION=${{ env.LUAROCKS_VERSION }}
+            LIBMODSECURITY_VERSION=${{ env.LIBMODSECURITY_VERSION }}
+            MODSECURITY_NGINX_VERSION=${{ env.MODSECURITY_NGINX_VERSION }}
+            CRS_VERSION=${{ env.CRS_VERSION }}
 
       - name: Export digest
         run: |
@@ -216,9 +219,10 @@ jobs:
           images: ${{ env.BASE_IMAGE }}
           tags: |
             type=schedule
-            type=ref,prefix=${{ matrix.acme_client }}-,event=branch
-            type=ref,prefix=${{ matrix.acme_client }}-,event=tag
-            type=ref,prefix=${{ matrix.acme_client }}-,event=pr
+            type=ref,value=${{ matrix.acme_client }}-{{branch}},event=branch
+            type=ref,value=${{ matrix.acme_client }}-{{tag}},event=tag
+            type=ref,prefix=${{ matrix.acme_client }}-pr-,event=pr
+            type=raw,priority=1000,value=${{ matrix.acme_client }},enable={{is_default_branch}}
       
       - name: Login to Docker Hub
         uses: docker/login-action@v3
