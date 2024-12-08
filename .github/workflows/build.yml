@@ -152,6 +152,11 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.BASE_IMAGE }}
+          tags: |
+            type=ref,value=${{ matrix.acme_client }}-{{branch}},event=branch
+            type=ref,value=${{ matrix.acme_client }}-{{tag}},event=tag
+            type=ref,prefix=${{ matrix.acme_client }}-pr-,event=pr
+            type=raw,priority=1000,value=${{ matrix.acme_client }},enable={{is_default_branch}}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
