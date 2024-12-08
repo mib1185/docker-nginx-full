@@ -17,8 +17,8 @@ jobs:
       matrix:
         platform:
             - amd64
-            - arm64
-            - arm/v7
+            # - arm64
+            # - arm/v7
 
     steps:
       - name: Check out repository
@@ -100,7 +100,9 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.BASE_IMAGE }}
-      
+          tags: |
+            type=raw,priority=1000,value=latest,enable={{is_default_branch}}
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -129,8 +131,8 @@ jobs:
           - certbot-node
         platform:
           - amd64
-          - arm64
-          - arm/v7
+          # - arm64
+          # - arm/v7
     needs:
       - merge_base_image
 
@@ -218,7 +220,6 @@ jobs:
         with:
           images: ${{ env.BASE_IMAGE }}
           tags: |
-            type=schedule
             type=ref,value=${{ matrix.acme_client }}-{{branch}},event=branch
             type=ref,value=${{ matrix.acme_client }}-{{tag}},event=tag
             type=ref,prefix=${{ matrix.acme_client }}-pr-,event=pr
